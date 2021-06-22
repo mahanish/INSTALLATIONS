@@ -1,0 +1,133 @@
+---
+- name: setup vprofile stack
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars_files:
+    - vpro_stack_vars/cloudvars
+  tasks:
+
+    - name: Create vprofile ec2 key
+      ec2_key:
+        name: vprofile-key
+        region: "{{region}}"
+      register: key_out
+
+    - debug:
+        msg: "{{key_out}}"
+
+    - copy:
+        content: "{{key_out.key.private_key}}"
+        dest: "./login_vprofile_key.pem"
+        mode: 0600
+      when: key_out.changed
+
+    - name: create security group
+      ec2_group:
+        name: vpro_stack_sg
+        description: Allow port 22 from everywhere
+        region: "{{region}}"
+        rules:
+         - proto: tcp
+           from_port: 80
+           to_port: 80
+           cidr_ip: 0.0.0.0/0
+         - proto: tcp
+           from_port: 22
+           to_port: 22
+           cidr_ip: 0.0.0.0/0
+         - proto: tcp
+           from_port: 8080
+           to_port: 8080
+           cidr_ip: 0.0.0.0/0
+         - proto: tcp
+           from_port: 3306
+           to_port: 3306
+           cidr_ip: 0.0.0.0/0
+      register: vprostackSG
+
+#    - debug:
+#        msg: "{{vprostackSG}}"
+
+    - name: create security group
+      ec2_group:
+        name: vpro_stack_sg
+        description: Allow port 22 from everywhere
+        region: "{{region}}"
+        rules:
+         - proto: tcp
+           from_port: 80
+           to_port: 80
+           cidr_ip: 0.0.0.0/0
+         - proto: tcp
+           from_port: 22
+           to_port: 22
+           cidr_ip: 0.0.0.0/0
+         - proto: tcp
+           from_port: 8080
+           to_port: 8080
+           cidr_ip: 0.0.0.0/0
+         - proto: tcp
+           from_port: 3306
+           to_port: 3306
+           cidr_ip: 0.0.0.0/0
+         - proto: all
+           group_id: "{{vprostackSG.group_id}}"
+      register: vprostackSG
+
+    - name: create ec2 instance for nginx tomcat rmq01 mc01 db
+      ec2:
+        key_name: vprofile-key
+        region: "{{region}}"
+        instance_type: "{{inst_t}}"
+        image: "{{ami}}"
+        wait: yes
+        wait_timeout: 300
+        instance_tags:
+          Name: "{{item.name}}"
+          project: vprofile
+          owner: devops team
+        exact_count: 1
+        count_tag:
+          Name: "{{item.name}}"
+          project: vprofile
+          owner: devops team
+        group_id: "{{vprostackSG.group_id}}"
+        vpc_subnet_id: "{{item.subnet}}"
+      loop:
+        - name: Nginx01
+          subnet: "{{sub1}}"
+        - name: Nginx02
+          subnet: "{{sub2}}"
+        - name: tomcat01
+          subnet: "{{sub1}}"
+        - name: tomcat02
+          subnet: "{{sub2}}"
+        - name: rmq01
+          subnet: "{{sub1}}"
+        - name: mc01
+          subnet: "{{sub1}}"
+        - name: db01
+          subnet: "{{sub1}}"
+      register: vpro_ec2_info
+
+    - debug:
+        msg: "{{vpro_ec2_info}}"
+
+    - debug:
+        msg: "public ip for the instance {{item.name}} is {{item.IP}}"
+      loop:
+        - name: Nginx01
+          IP: "{{vpro_ec2_info.results[0].tagged_instances[0].public_ip}}"
+        - name: Nginx02
+          IP: "{{vpro_ec2_info.results[1].tagged_instances[0].public_ip}}"
+        - name: tomcat01
+          IP: "{{vpro_ec2_info.results[2].tagged_instances[0].public_ip}}"
+        - name: tomcat02
+          IP: "{{vpro_ec2_info.results[3].tagged_instances[0].public_ip}}"
+        - name: rmq01
+          IP: "{{vpro_ec2_info.results[4].tagged_instances[0].public_ip}}"
+        - name: mc01
+          IP: "{{vpro_ec2_info.results[5].tagged_instances[0].public_ip}}"
+        - name: db01
+          IP: "{{vpro_ec2_info.results[6].tagged_instances[0].public_ip}}"
