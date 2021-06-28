@@ -1,0 +1,73 @@
+- name: generate artifact, copy artifact and sql file to files directory
+  hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+####  INSTALLING JAVA AND MAVEN, SAME MODULE FOR OTHERS ALSO   #####
+
+    - name: install jdk and maven
+      apt:
+        name: "{{item}}"
+        state: present
+        update_cache: yes
+      loop:
+        - git
+        - openjdk-8-jdk
+        - maven
+
+
+####  CLONING THE CODE FROM GIT REPOSITORY  #####
+
+    - name: clone git repository
+      git:
+        repo: 'https://github.com/devopshydclub/vprofile-project.git'
+        dest: ./vprofile-repo
+        version: vp-rem
+      register: git_status
+
+    - name: mvn install command to build artifact
+      command: "mvn install"
+      args:
+        chdir: vprofile-repo
+      when: git_status.changed
+      register: mvn_info
+      
+####  TO START TOMCAT SERVICE, SAME MODULE FOR OTHERS ALSO  #####      
+
+  - name: start and enable tomcat 8
+      service:
+        name: tomcat8
+        state: started
+        enabled: yes
+        
+ #### TO RESTART TOMCAT SERVICE, SAME MODULE FOR OTHERS ALSO  #####
+ 
+ - name: restart tomcat
+      service:
+        name: tomcat8
+        state: restarted
+        
+ #### TO SEARCH AND REPLACE A PARTICUAR LINE  #####       
+        
+   - name: Enable remote login to mysql
+      lineinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+      notify:
+        - Restart mysql
+        
+#### TO INSTALL PACKAGES, SAME FOR OTHERS TOO  #####        
+        
+    - name: install mysql
+      package:
+        name: "{{item}}"
+        state: present
+        update_cache: yes
+      loop:
+        - mysql-server
+        - mysql-client
+        - python-mysqldb
+        - libmysqlclient-dev
+     
+     
