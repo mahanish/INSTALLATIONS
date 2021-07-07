@@ -1,0 +1,3 @@
+Deployment to production with approval is continuous delivery.
+
+Deployment to production with pre-approved is continuous deployment.
