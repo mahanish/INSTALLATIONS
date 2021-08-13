@@ -1,0 +1,17 @@
+      yum update -y
+   1  yum search jdk
+   2  yum install java-11-openjdk.x86_64 -y
+   3  java -version
+   4  sudo wget -O /etc/yum.repos.d/jenkins.repo     https://pkg.jenkins.io/redhat-stable/jenkins.repo
+   5  yum install wget -y
+   6  sudo wget -O /etc/yum.repos.d/jenkins.repo     https://pkg.jenkins.io/redhat-stable/jenkins.repo
+   7  sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+   8  sudo yum upgrade
+   9  sudo yum install epel-release java-11-openjdk-devel
+  10  java -version
+  11  sudo yum install jenkins
+  12  sudo systemctl daemon-reload
+  13  sudo systemctl start jenkins
+  14  sudo systemctl status jenkins
+  15  cat /var/lib/jenkins/secrets/initialAdminPassword
+   
